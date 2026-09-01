@@ -22,7 +22,7 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::984220190731:role/github-oidc
           aws-region: us-east-1 # Replace with your target AWS region
-
+          role-session-name: GitHubActionsDeployment
 
       - name: Verify AWS Identity
         run: |
