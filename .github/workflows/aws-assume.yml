@@ -1,0 +1,29 @@
+name: AWS Identity Assume
+
+on:
+  push:
+    branches:
+      - feature/github_workflow
+
+# REQUIRED: These permissions are mandatory for OIDC token generation to work
+permissions:
+  id-token: write   # This is required for requesting the JWT from GitHub's OIDC provider
+  contents: read    # This is required for actions/checkout
+
+jobs:
+  assume-aws-role:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::984220190731:role/github-oidc
+          aws-region: us-east-1 # Replace with your target AWS region
+          audience: sts.amazonaws.com
+
+      - name: Verify AWS Identity
+        run: |
+          aws sts get-caller-identity
