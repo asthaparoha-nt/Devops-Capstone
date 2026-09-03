@@ -1,10 +1,7 @@
 name: Build and Push to ECR
 
 on:
-  push:
-    branches:
-
-◦ feature/github_workflow.
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -15,42 +12,32 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-
-◦ name: Checkout repository.
+      - name: Checkout repository.
         uses: actions/checkout@v4
-
-
-◦ name: Configure AWS credentials via OIDC.
+      - name: Configure AWS credentials via OIDC.
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::984220190731:role/github-actions-devops-capstone
           aws-region: us-east-1
-
-
-◦ name: Verify AWS identity.
+      - name: Verify AWS identity.
         run: aws sts get-caller-identity
 
-
-◦ name: Login to Amazon ECR.
+      - name: Login to Amazon ECR.
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
-
-
-◦ name: Build and push backend.
+      - name: Build and push backend.
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: assessment-portal-backend
-          IMAGE_TAG: ${{ github.sha }}
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+            ECR_REPOSITORY: assessment-portal-backend
+            IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
-
-
-◦ name: Build and push frontend.
+            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./backend
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+      - name: Build and push frontend.
         env:
-          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: assessment-portal-frontend
-          IMAGE_TAG: ${{ github.sha }}
+            ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+            ECR_REPOSITORY: assessment-portal-frontend
+            IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./frontend
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+            docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG ./frontend
+            docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
