@@ -1,6 +1,6 @@
 resource "aws_ecr_repository" "backend" {
   name                 = "${var.project_name}-backend"
-  image_tag_mutability = "IMMUTABLE"//this means an image tag cannot simply be overwritten with other image
+  image_tag_mutability = "MUTABLE"//this means an image tag cannot simply be overwritten with other image
   force_delete         = true
 
   image_scanning_configuration {
@@ -23,7 +23,7 @@ resource "aws_ecr_repository" "backend" {
 
 resource "aws_ecr_repository" "frontend" {
   name                 = "${var.project_name}-frontend"
-  image_tag_mutability = "IMMUTABLE"
+  image_tag_mutability = "MUTABLE"
   force_delete         = true
 
   image_scanning_configuration {
