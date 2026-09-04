@@ -22,7 +22,7 @@ jobs:
           aws-region: us-east-1
 
       - name: Run Terragrunt Plan
-        uses: gruntwork-io/terragrunt-action@v2
+        uses: gruntwork-io/terragrunt-action@v3
         with:
           tf_version: 1.16.0
           tg_version: 1.1.4
