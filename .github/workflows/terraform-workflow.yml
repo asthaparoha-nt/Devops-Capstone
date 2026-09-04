@@ -29,7 +29,6 @@ jobs:
       - name: Run Terragrunt Plan
         uses: gruntwork-io/terragrunt-action@v3
         with:
-          tg_version: ${{ inputs.tg_version }}
-          tf_path: /home/runner/workflow/terraform # Points directly to your TF binary
-          tg_dir: ${{ inputs.working_dir }}
-          tg_command: "plan"
+            tg_dir: ${{ inputs.working_dir }}
+            tg_command: "plan"
+
