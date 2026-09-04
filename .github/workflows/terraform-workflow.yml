@@ -21,25 +21,10 @@ jobs:
           role-to-assume: arn:aws:iam::984220190731:role/github-actions-devops-capstone
           aws-region: us-east-1
 
-      - name: Verify AWS identity
-        run: aws sts get-caller-identity
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+      - name: Run Terragrunt Plan
+        uses: gruntwork-io/terragrunt-action@v2
         with:
-          terraform_version: 1.16.0
-
-      - name: Setup Terragrunt
-        uses: gruntwork-io/terragrunt-action@v3
-        with:
+          tf_version: 1.16.0
           tg_version: 1.1.4
-          tf_path: terraform
-
-      - name: Terragrunt Init
-        run: terragrunt init
-
-      - name: Terragrunt Validate
-        run: terragrunt validate
-
-      - name: Terragrunt Plan
-        run: terragrunt plan
+          tg_dir: "./"
+          tg_command: "plan"
