@@ -21,10 +21,15 @@ jobs:
           role-to-assume: arn:aws:iam::984220190731:role/github-actions-devops-capstone
           aws-region: us-east-1
 
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+            terraform_version: ${{ inputs.tf_version }}
+
       - name: Run Terragrunt Plan
         uses: gruntwork-io/terragrunt-action@v3
         with:
-          tf_version: 1.16.0
-          tg_version: 1.1.4
-          tg_dir: "./"
+          tg_version: ${{ inputs.tg_version }}
+          tf_path: /home/runner/workflow/terraform # Points directly to your TF binary
+          tg_dir: ${{ inputs.working_dir }}
           tg_command: "plan"
