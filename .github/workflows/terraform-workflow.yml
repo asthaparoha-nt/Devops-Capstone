@@ -2,7 +2,9 @@ name: Terraform and Terragrunt
 
 on:
   workflow_dispatch:
-
+concurrency:
+  group: terraform-state
+  cancel-in-progress: false
 permissions:
   id-token: write
   contents: read
@@ -20,11 +22,11 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::984220190731:role/github-actions-devops-capstone
           aws-region: us-east-1
-
+                 
       - name: Run Terragrunt Plan
         uses: gruntwork-io/terragrunt-action@v3
         with:
           tf_version: ${{ inputs.tf_version }}
           tg_version: ${{ inputs.tg_version }}
           tg_dir: ${{ inputs.working_dir }}
-          tg_command: "plan"
+          tg_command: "plan -lock-timeout=5m"
