@@ -28,5 +28,5 @@ jobs:
         with:
           tofu_version: "1.10.1"
           tg_version: "0.93.0"
-          tg_dir: "terragrunt/ecr"
+          tg_dir: "terragrunt"
           tg_command: "plan -lock-timeout=5m"
