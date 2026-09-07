@@ -17,5 +17,5 @@ remote_state {
 }
 
 terraform {
-  source = "./terraform"
+  source = "../terraform"
 }
