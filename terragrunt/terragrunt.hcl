@@ -10,9 +10,9 @@ remote_state {
     bucket =  local.state_bucket
     key    =  local.state_key
     region =  local.aws_region
-
+    dynamodb_table = "terraform-locks-${local.state_bucket}"
+  
     encrypt      = true
-    use_lockfile = true
   }
 }
 
