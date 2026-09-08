@@ -2,6 +2,16 @@ name: Terraform and Terragrunt
 
 on:
   workflow_dispatch:
+   inputs:
+      target_operation:
+        description: 'Select the Terragrunt operation to run'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
 permissions:
   id-token: write
   contents: read
@@ -27,3 +37,19 @@ jobs:
           tg_version: "0.58.3"
           tg_dir: "terragrunt"
           tg_command: "plan"
+      - name: Run Terragrunt Apply
+        if: github.event.inputs.target_operation == 'apply'
+        uses: gruntwork-io/terragrunt-action@v2
+        with:
+          tf_version: "1.14.3"
+          tg_version: "0.58.3"
+          tg_dir: "terragrunt"
+          tg_command: "apply -auto-approve"
+      - name: Run Terragrunt Destroy
+        if: github.event.inputs.target_operation == 'destroy'
+        uses: gruntwork-io/terragrunt-action@v2
+        with:
+          tf_version: "1.14.3"
+          tg_version: "0.58.3"
+          tg_dir: "terragrunt"
+          tg_command: "destroy -auto-approve"
