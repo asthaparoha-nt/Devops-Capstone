@@ -26,7 +26,7 @@ jobs:
       - name: Run Terragrunt Plan
         uses: gruntwork-io/terragrunt-action@v3
         with:
-          tofu_version: "1.10.1"
-          tg_version: "0.93.0"
+          tf_version: "1.14.3"
+          tg_version: "0.58.3"
           tg_dir: "terragrunt"
-          tg_command: "plan -lock-timeout=5m"
+          tg_command: "plan"
