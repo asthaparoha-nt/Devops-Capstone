@@ -11,7 +11,6 @@ remote_state {
     key    =  local.state_key
     region =  local.aws_region
     dynamodb_table = "terraform-locks-${local.state_bucket}"
-  
     encrypt      = true
   }
 }
