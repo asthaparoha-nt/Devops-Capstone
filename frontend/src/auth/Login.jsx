@@ -79,49 +79,49 @@ function Login() {
 
     const onSubmit = async (data) => {
 
-    try {
+        try {
 
-        const response = await loginUser(data);
+            const response = await loginUser(data);
 
-        console.log("Backend Response:", response);
+            console.log("Backend Response:", response);
 
-        const token = response.data.access_token;
-        const role = response.data.role;
+            const token = response.data.access_token;
+            const role = response.data.role;
 
-        login(token, role);
+            login(token, role);
 
-        toast.success(response.message);
+            toast.success(response.message);
 
-        if (role === "admin") {
+            if (role === "admin") {
 
-            navigate("/admin/dashboard");
+                navigate("/admin/dashboard");
 
-        } else {
+            } else {
 
-            navigate("/student/dashboard");
+                navigate("/student/dashboard");
+
+            }
+
+        }
+        catch (error) {
+
+            console.log("ERROR OBJECT:", error);
+            console.log("ERROR RESPONSE:", error.response);
+            console.log("ERROR DATA:", error.response?.data);
+
+            toast.error(
+
+                error.response?.data?.message ||
+
+                error.response?.data?.detail ||
+
+                "Login Failed"
+
+            );
 
         }
 
-    } 
-    catch (error) {
-
-    console.log("ERROR OBJECT:", error);
-    console.log("ERROR RESPONSE:", error.response);
-    console.log("ERROR DATA:", error.response?.data);
-
-    toast.error(
-
-        error.response?.data?.message ||
-
-        error.response?.data?.detail ||
-
-        "Login Failed"
-
-    );
-
-}
-
-};
+    };
     return (
 
         <Box
@@ -227,7 +227,7 @@ function Login() {
 
                                     <InputAdornment position="start">
 
-                                        <EmailOutlined/>
+                                        <EmailOutlined />
 
                                     </InputAdornment>
 
@@ -269,7 +269,7 @@ function Login() {
 
                                     <InputAdornment position="start">
 
-                                        <LockOutlined/>
+                                        <LockOutlined />
 
                                     </InputAdornment>,
 
@@ -297,11 +297,11 @@ function Login() {
 
                                                     ?
 
-                                                    <VisibilityOff/>
+                                                    <VisibilityOff />
 
                                                     :
 
-                                                    <Visibility/>
+                                                    <Visibility />
 
                                             }
 
