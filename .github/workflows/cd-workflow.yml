@@ -1,10 +1,7 @@
 name: CD - Deploy Assessment Portal
 
 on:
-  push:
-    branches:
-      - master
-      - feature/infracode
+  workflow_dispatch:
 
 permissions:
   id-token: write
