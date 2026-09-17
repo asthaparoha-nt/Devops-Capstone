@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: assessment-portal-backend
+  namespace: default
+  labels:
+    app: assessment-portal-backend
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: assessment-portal-backend
+
+  template:
+    metadata:
+      labels:
+        app: assessment-portal-backend
+
+    spec:
+      imagePullSecrets:
+        - name: ecr-registry-secret
+
+      containers:
+        - name: backend
+
+          image: 984220190731.dkr.ecr.us-east-1.amazonaws.com/assessment-portal-backend:4a4daa03dced8b73c39585fa0ebdc3c36925d7e0
+
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 8000
+              protocol: TCP
+
+          env:
+            - name: MONGODB_URL
+              value: "mongodb+srv://asthaparoha6_db_user:Shivay1920@cluster0.ehwbysy.mongodb.net/?appName=Cluster0"
+
+            - name: DATABASE_NAME
+              value: asthaparoha6_db_user
+
+            - name: SECRET_KEY
+              value: "<YOUR_SECRET_KEY>"
+
+            - name: ALGORITHM
+              value: "HS256"
+
+            - name: ACCESS_TOKEN_EXPIRE_MINUTES
+              value: "60"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: assessment-portal-backend
+  namespace: default
+  labels:
+    app: assessment-portal-backend
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: assessment-portal-backend
+
+  ports:
+    - name: http
+      port: 8000
+      targetPort: 8000
+      protocol: TCP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: assessment-portal-backend
+  namespace: default
+
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+spec:
+  ingressClassName: nginx
+
+  rules:
+    - http:
+        paths:
+          - path: /api
+            pathType: Prefix
+
+            backend:
+              service:
+                name: assessment-portal-backend
+                port:
+                  number: 8000

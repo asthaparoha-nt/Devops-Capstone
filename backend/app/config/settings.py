@@ -1,19 +1,20 @@
+from pathlib import Path
 from dotenv import load_dotenv
 import os
 
-load_dotenv()
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
 
 
 class Settings:
-    MONGODB_URL = os.getenv("MONGODB_URL")
-    DATABASE_NAME = os.getenv("DATABASE_NAME")
-
-    SECRET_KEY = os.getenv("SECRET_KEY")
-    ALGORITHM = os.getenv("ALGORITHM")
-    ACCESS_TOKEN_EXPIRE_MINUTES = int(
-        os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", 60)
+    MONGODB_URL: str = (
+        os.getenv("MONGODB_URL")
+        or os.getenv("MONGO_URI")
+        or "mongodb://127.0.0.1:27017"
     )
-    
+    MONGO_URI: str = MONGODB_URL
+    DATABASE_NAME: str = (
+        os.getenv("DATABASE_NAME") or "assessment_portal"
+    )
 
 
 settings = Settings()
