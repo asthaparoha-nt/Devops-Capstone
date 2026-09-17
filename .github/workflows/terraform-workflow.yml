@@ -2,7 +2,16 @@ name: Terraform and Terragrunt
 
 on:
   workflow_dispatch:
-
+   inputs:
+      target_operation:
+        description: 'Select the Terragrunt operation to run'
+        required: true
+        default: 'plan'
+        type: choice
+        options:
+          - plan
+          - apply
+          - destroy
 permissions:
   id-token: write
   contents: read
@@ -20,26 +29,27 @@ jobs:
         with:
           role-to-assume: arn:aws:iam::984220190731:role/github-actions-devops-capstone
           aws-region: us-east-1
-
-      - name: Verify AWS identity
-        run: aws sts get-caller-identity
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
+                 
+      - name: Run Terragrunt Plan
+        uses: gruntwork-io/terragrunt-action@v2
         with:
-          terraform_version: 1.5.8
-
-      - name: Setup Terragrunt
-        uses: gruntwork-io/terragrunt-action@v3
+          tf_version: "1.14.3"
+          tg_version: "0.58.3"
+          tg_dir: "terragrunt"
+          tg_command: "plan"
+      - name: Run Terragrunt Apply
+        if: github.event.inputs.target_operation == 'apply'
+        uses: gruntwork-io/terragrunt-action@v2
         with:
-          tg_version: 1.1.1
-          tf_path: terraform
-
-      - name: Terragrunt Init
-        run: terragrunt init
-
-      - name: Terragrunt Validate
-        run: terragrunt validate
-
-      - name: Terragrunt Plan
-        run: terragrunt plan
+          tf_version: "1.14.3"
+          tg_version: "0.58.3"
+          tg_dir: "terragrunt"
+          tg_command: "apply -auto-approve"
+      - name: Run Terragrunt Destroy
+        if: github.event.inputs.target_operation == 'destroy'
+        uses: gruntwork-io/terragrunt-action@v2
+        with:
+          tf_version: "1.14.3"
+          tg_version: "0.58.3"
+          tg_dir: "terragrunt"
+          tg_command: "destroy -auto-approve"

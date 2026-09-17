@@ -10,12 +10,11 @@ remote_state {
     bucket =  local.state_bucket
     key    =  local.state_key
     region =  local.aws_region
-
-    encrypt      = true
     use_lockfile = true
+    encrypt      = true
   }
 }
 
 terraform {
-  source = "./terraform"
+  source = "../terraform"
 }

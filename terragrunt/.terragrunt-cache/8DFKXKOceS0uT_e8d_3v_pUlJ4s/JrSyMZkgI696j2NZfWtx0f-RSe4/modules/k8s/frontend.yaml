@@ -1,0 +1,81 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: assessment-portal-frontend
+  namespace: default
+  labels:
+    app: assessment-portal-frontend
+
+spec:
+  replicas: 1
+
+  selector:
+    matchLabels:
+      app: assessment-portal-frontend
+
+  template:
+    metadata:
+      labels:
+        app: assessment-portal-frontend
+
+    spec:
+      imagePullSecrets:
+        - name: ecr-registry-secret
+
+      containers:
+        - name: frontend
+
+          image: 984220190731.dkr.ecr.us-east-1.amazonaws.com/assessment-portal-frontend:latest
+
+          imagePullPolicy: Always
+
+          ports:
+            - name: http
+              containerPort: 80
+              protocol: TCP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: assessment-portal-frontend
+  namespace: default
+  labels:
+    app: assessment-portal-frontend
+
+spec:
+  type: ClusterIP
+
+  selector:
+    app: assessment-portal-frontend
+
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: assessment-portal-frontend
+  namespace: default
+
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+spec:
+  ingressClassName: nginx
+
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+
+            backend:
+              service:
+                name: assessment-portal-frontend
+                port:
+                  number: 80

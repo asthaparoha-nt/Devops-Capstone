@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
 
-    baseURL: "http://localhost:8000",
+    baseURL: "https://assessment-portal-alb-1084175467.us-east-1.elb.amazonaws.com/api",
 
     headers: {
         "Content-Type": "application/json"

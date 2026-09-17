@@ -1,0 +1,358 @@
+#!/bin/bash
+
+set -e
+
+# ==========================================================
+# K3s MASTER USER DATA
+# Assessment Portal Capstone
+# ==========================================================
+
+# ----------------------------------------------------------
+# 1. AWS CLI
+# ----------------------------------------------------------
+
+command -v aws || dnf install -y awscli-2
+
+# ----------------------------------------------------------
+# 2. SSM Agent
+# ----------------------------------------------------------
+
+systemctl enable amazon-ssm-agent
+systemctl start amazon-ssm-agent
+
+# ----------------------------------------------------------
+# 3. Hostname
+# ----------------------------------------------------------
+
+hostnamectl set-hostname assessment-portal-k3s-master
+
+# ----------------------------------------------------------
+# 4. Install K3s Server
+# ----------------------------------------------------------
+
+curl -sfL https://get.k3s.io -o /tmp/k3s-install.sh
+
+INSTALL_K3S_EXEC="server \
+--node-name assessment-portal-k3s-master \
+--disable traefik \
+--write-kubeconfig-mode 644" \
+sh /tmp/k3s-install.sh
+
+# ----------------------------------------------------------
+# 5. Enable and Start K3s
+# ----------------------------------------------------------
+
+systemctl enable k3s
+systemctl start k3s
+
+# ----------------------------------------------------------
+# 6. Wait for K3s Server
+# ----------------------------------------------------------
+
+until systemctl is-active --quiet k3s
+do
+    echo "Waiting for K3s server..."
+    sleep 5
+done
+
+# ----------------------------------------------------------
+# 7. Wait for K3s Node Token
+# ----------------------------------------------------------
+
+while [ ! -f /var/lib/rancher/k3s/server/node-token ]
+do
+    echo "Waiting for K3s node token..."
+    sleep 5
+done
+
+# ----------------------------------------------------------
+# 8. Get Master Private IP
+# ----------------------------------------------------------
+
+MASTER_IP=$(hostname -I | awk '{print $1}')
+
+echo "Master Private IP: $MASTER_IP"
+
+# ----------------------------------------------------------
+# 9. Get K3s Token
+# ----------------------------------------------------------
+
+K3S_TOKEN=$(cat /var/lib/rancher/k3s/server/node-token)
+
+# ----------------------------------------------------------
+# 10. Store Master IP in SSM Parameter Store
+# ----------------------------------------------------------
+
+aws ssm put-parameter \
+    --name "/${project_name}/k3s/master-ip" \
+    --value "$MASTER_IP" \
+    --type "String" \
+    --overwrite \
+    --region "${aws_region}"
+
+# ----------------------------------------------------------
+# 11. Store K3s Token in SSM Parameter Store
+# ----------------------------------------------------------
+
+aws ssm put-parameter \
+    --name "/${project_name}/k3s/master-token" \
+    --value "$K3S_TOKEN" \
+    --type "SecureString" \
+    --overwrite \
+    --region "${aws_region}"
+
+echo "K3s master IP and token stored in SSM."
+
+# ----------------------------------------------------------
+# 12. Make kubectl Available
+# ----------------------------------------------------------
+
+if [ ! -e /usr/local/bin/kubectl ]; then
+    ln -s /usr/local/bin/k3s /usr/local/bin/kubectl
+fi
+
+# ----------------------------------------------------------
+# 13. Configure kubeconfig for root
+# ----------------------------------------------------------
+
+mkdir -p /root/.kube
+
+cp /etc/rancher/k3s/k3s.yaml \
+   /root/.kube/config
+
+chmod 600 /root/.kube/config
+
+# Replace localhost with Master Private IP
+sed -i "s/127.0.0.1/$MASTER_IP/g" \
+    /root/.kube/config
+
+# ----------------------------------------------------------
+# 14. Configure kubeconfig for ec2-user
+# ----------------------------------------------------------
+
+mkdir -p /home/ec2-user/.kube
+
+cp /etc/rancher/k3s/k3s.yaml \
+   /home/ec2-user/.kube/config
+
+# Replace localhost with Master Private IP
+sed -i "s/127.0.0.1/$MASTER_IP/g" \
+    /home/ec2-user/.kube/config
+
+chmod 644 /home/ec2-user/.kube/config
+
+chown -R ec2-user:ec2-user \
+    /home/ec2-user/.kube
+
+# ----------------------------------------------------------
+# 15. Configure KUBECONFIG Environment
+# ----------------------------------------------------------
+
+cat > /etc/profile.d/k3s.sh <<EOF
+export KUBECONFIG=/home/ec2-user/.kube/config
+EOF
+
+chmod 644 /etc/profile.d/k3s.sh
+
+# Configure for ec2-user
+echo 'export KUBECONFIG=/home/ec2-user/.kube/config' \
+    >> /home/ec2-user/.bashrc
+
+# Configure root
+echo 'export KUBECONFIG=/root/.kube/config' \
+    >> /root/.bashrc
+
+# ----------------------------------------------------------
+# 16. kubectl Alias
+# ----------------------------------------------------------
+
+echo 'alias k=kubectl' >> /home/ec2-user/.bashrc
+echo 'alias k=kubectl' >> /root/.bashrc
+
+# ----------------------------------------------------------
+# 17. Verify Kubernetes Master
+# ----------------------------------------------------------
+
+echo "=================================================="
+echo "K3s Master Status"
+echo "=================================================="
+
+systemctl status k3s --no-pager || true
+
+echo "=================================================="
+echo "K3s Version"
+echo "=================================================="
+
+/usr/local/bin/k3s --version
+
+echo "=================================================="
+echo "Kubernetes Nodes"
+echo "=================================================="
+
+KUBECONFIG=/home/ec2-user/.kube/config \
+/usr/local/bin/kubectl get nodes -o wide
+
+# ----------------------------------------------------------
+# 18. Disable Scheduling on Control Plane
+# ----------------------------------------------------------
+
+KUBECONFIG=/home/ec2-user/.kube/config \
+/usr/local/bin/kubectl taint nodes \
+    assessment-portal-k3s-master \
+    node-role.kubernetes.io/control-plane:NoSchedule \
+    --overwrite || true
+
+# ----------------------------------------------------------
+# 19. Install NGINX Ingress Controller
+#     Using K3s Helm Controller
+# ----------------------------------------------------------
+
+echo "=================================================="
+echo "Installing NGINX Ingress Controller"
+echo "=================================================="
+
+mkdir -p /var/lib/rancher/k3s/server/manifests
+
+cat <<'EOF' > /var/lib/rancher/k3s/server/manifests/nginx-ingress.yaml
+apiVersion: helm.cattle.io/v1
+kind: HelmChart
+metadata:
+  name: ingress-nginx
+  namespace: kube-system
+spec:
+  chart: ingress-nginx
+  repo: https://kubernetes.github.io/ingress-nginx
+  targetNamespace: ingress-nginx
+  createNamespace: true
+  valuesContent: |
+    controller:
+      service:
+        type: NodePort
+        nodePorts:
+          http: 30080
+          https: 30443
+EOF
+
+echo "NGINX Ingress HelmChart manifest created."
+
+# ----------------------------------------------------------
+# 20. Wait for Worker Node
+# ----------------------------------------------------------
+
+echo "=================================================="
+echo "Waiting for Worker Node"
+echo "=================================================="
+
+WORKER_READY=false
+
+for i in {1..60}
+do
+
+    WORKER_COUNT=$(
+        KUBECONFIG=/home/ec2-user/.kube/config \
+        /usr/local/bin/kubectl get nodes \
+        --no-headers 2>/dev/null \
+        | awk '$2 == "Ready" && $3 != "control-plane" {count++} END {print count+0}'
+    )
+
+    if [ "$WORKER_COUNT" -ge 1 ]; then
+        WORKER_READY=true
+        echo "Worker node is Ready."
+        break
+    fi
+
+    echo "Waiting for worker to join... attempt $i/60"
+
+    sleep 10
+
+done
+
+# ----------------------------------------------------------
+# 21. Wait for NGINX Ingress Controller
+# ----------------------------------------------------------
+
+echo "=================================================="
+echo "Checking NGINX Ingress Controller"
+echo "=================================================="
+
+for i in {1..30}
+do
+
+    if KUBECONFIG=/home/ec2-user/.kube/config \
+       /usr/local/bin/kubectl get pods \
+       -n ingress-nginx \
+       --no-headers 2>/dev/null \
+       | grep -q "Running"; then
+
+        echo "NGINX Ingress Controller is running."
+        break
+    fi
+
+    echo "Waiting for NGINX Ingress Controller... attempt $i/30"
+
+    sleep 10
+
+done
+
+# ----------------------------------------------------------
+# 22. Final Cluster Verification
+# ----------------------------------------------------------
+
+echo "=================================================="
+echo "FINAL KUBERNETES CLUSTER"
+echo "=================================================="
+
+KUBECONFIG=/home/ec2-user/.kube/config \
+/usr/local/bin/kubectl get nodes -o wide
+
+echo "=================================================="
+echo "NGINX INGRESS"
+echo "=================================================="
+
+KUBECONFIG=/home/ec2-user/.kube/config \
+/usr/local/bin/kubectl get pods -n ingress-nginx
+
+echo "=================================================="
+echo "NGINX SERVICES"
+echo "=================================================="
+
+KUBECONFIG=/home/ec2-user/.kube/config \
+/usr/local/bin/kubectl get svc -n ingress-nginx
+
+if [ "$WORKER_READY" = true ]; then
+    echo "=================================================="
+    echo "K3s MASTER AND WORKER CONNECTED SUCCESSFULLY"
+    echo "=================================================="
+else
+    echo "=================================================="
+    echo "MASTER IS READY - WORKER NOT READY YET"
+    echo "=================================================="
+fi
+
+echo "=================================================="
+echo "K3s Master Bootstrap Completed"
+echo "=================================================="
+echo "===== Creating/Refreshing ECR Registry Secret ====="
+
+ECR_ACCOUNT_ID=$(aws sts get-caller-identity \
+  --query Account \
+  --output text \
+  --region "${aws_region}")
+
+ECR_REGISTRY="$${ECR_ACCOUNT_ID}.dkr.ecr.${aws_region}.amazonaws.com"
+ECR_PASSWORD=$(aws ecr get-login-password \
+  --region "${aws_region}")
+
+kubectl create secret docker-registry ecr-registry-secret \
+  --docker-server="$${ECR_REGISTRY}" \
+  --docker-username="AWS" \
+  --docker-password="$${ECR_PASSWORD}" \
+  --docker-email="unused@example.com" \
+  --namespace=default \
+  --dry-run=client \
+  -o yaml | kubectl apply -f -
+
+echo "ECR registry secret created/refreshed successfully."
+
+kubectl get secret ecr-registry-secret \
+  --namespace=default

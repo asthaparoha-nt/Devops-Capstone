@@ -1,0 +1,159 @@
+#!/bin/bash
+
+set -euxo pipefail
+
+# --------------------------------------------------
+# Logging
+# --------------------------------------------------
+
+exec > >(tee -a /var/log/k3s-worker-user-data.log | logger -t k3s-worker-user-data -s 2>/dev/console) 2>&1
+
+echo "===== K3s Worker Bootstrap Started ====="
+
+# --------------------------------------------------
+# AWS CLI
+# --------------------------------------------------
+
+if ! command -v aws >/dev/null 2>&1; then
+    dnf install -y awscli-2
+fi
+
+echo "AWS CLI available: $(aws --version)"
+
+# --------------------------------------------------
+# SSM Agent
+# --------------------------------------------------
+
+systemctl enable amazon-ssm-agent
+systemctl start amazon-ssm-agent
+
+# --------------------------------------------------
+# Get Instance ID
+# --------------------------------------------------
+
+TOKEN=$(curl -sS -X PUT \
+    -H "X-aws-ec2-metadata-token-ttl-seconds: 21600" \
+    http://169.254.169.254/latest/api/token)
+
+INSTANCE_ID=$(curl -sS \
+    -H "X-aws-ec2-metadata-token: $TOKEN" \
+    http://169.254.169.254/latest/meta-data/instance-id)
+
+echo "Instance ID: $INSTANCE_ID"
+
+# --------------------------------------------------
+# Hostname
+# --------------------------------------------------
+
+hostnamectl set-hostname "assessment-portal-k3s-worker-$INSTANCE_ID"
+
+# --------------------------------------------------
+# Wait for Master Information in SSM
+# --------------------------------------------------
+
+echo "Waiting for K3s master information..."
+
+while true
+do
+
+    MASTER_IP=$(aws ssm get-parameter \
+        --name "/${project_name}/k3s/master-ip" \
+        --query "Parameter.Value" \
+        --output text \
+        --region "${aws_region}" 2>/dev/null || true)
+
+    K3S_TOKEN=$(aws ssm get-parameter \
+        --name "/${project_name}/k3s/master-token" \
+        --with-decryption \
+        --query "Parameter.Value" \
+        --output text \
+        --region "${aws_region}" 2>/dev/null || true)
+
+    if [ -n "$MASTER_IP" ] && \
+       [ "$MASTER_IP" != "None" ] && \
+       [ -n "$K3S_TOKEN" ] && \
+       [ "$K3S_TOKEN" != "None" ]; then
+
+        echo "Master IP found: $MASTER_IP"
+        echo "K3s token retrieved successfully."
+
+        break
+    fi
+
+    echo "Waiting for master-ip and master-token in SSM..."
+
+    sleep 10
+
+done
+
+# --------------------------------------------------
+# Wait for K3s API Server
+# --------------------------------------------------
+
+echo "Waiting for K3s API server at $MASTER_IP:6443..."
+
+until curl -k -sS \
+    --connect-timeout 5 \
+    "https://$MASTER_IP:6443/readyz" \
+    >/dev/null 2>&1
+do
+
+    echo "K3s API server not ready yet..."
+
+    sleep 10
+
+done
+
+echo "K3s API server is reachable."
+
+# --------------------------------------------------
+# Install K3s Agent
+# --------------------------------------------------
+
+echo "Installing K3s agent..."
+
+curl -sfL https://get.k3s.io -o /tmp/k3s-install.sh
+
+INSTALL_K3S_EXEC="agent \
+--node-name assessment-portal-k3s-worker-$INSTANCE_ID" \
+K3S_URL="https://$MASTER_IP:6443" \
+K3S_TOKEN="$K3S_TOKEN" \
+sh /tmp/k3s-install.sh
+
+# --------------------------------------------------
+# Enable and Start K3s Agent
+# --------------------------------------------------
+
+systemctl enable k3s-agent
+systemctl start k3s-agent
+
+# --------------------------------------------------
+# Wait for Agent
+# --------------------------------------------------
+
+echo "Waiting for k3s-agent..."
+
+until systemctl is-active --quiet k3s-agent
+do
+
+    echo "k3s-agent is not active yet..."
+
+    sleep 5
+
+done
+
+echo "k3s-agent is running."
+
+# --------------------------------------------------
+# Verify K3s
+# --------------------------------------------------
+
+echo "K3s version:"
+
+/usr/local/bin/k3s --version
+
+echo "K3s agent status:"
+
+systemctl status k3s-agent --no-pager || true
+
+echo "===== K3s Worker Bootstrap Completed ====="
