@@ -1,13 +1,13 @@
 import api from "../api/axios";
+import { BASE_URL } from "../constants/constants";
+
 
 export const loginUser = async (data) => {
 
     const response = await api.post(
 
-        "/auth/login",
-
+        `${BASE_URL}/auth/login`,
         data
-
     );
 
     return response.data;
@@ -18,7 +18,7 @@ export const registerUser = async (data) => {
 
     const response = await api.post(
 
-        "/auth/register",
+        `${BASE_URL}/auth/register`,
 
         data
 
