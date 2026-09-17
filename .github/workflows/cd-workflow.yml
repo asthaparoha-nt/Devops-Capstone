@@ -1,10 +1,7 @@
 name: CD - Deploy Assessment Portal
 
 on:
-  push:
-    branches:
-      - master
-      - feature/infracode
+  workflow_dispatch:
 
 permissions:
   id-token: write
@@ -93,10 +90,10 @@ jobs:
 
               "echo ===== Backend Rollout =====",
               "kubectl rollout status deployment/assessment-portal-backend --timeout=180s",
-
+              "kubectl rollout restart deployment/assessment-portal-backend",
               "echo ===== Frontend Rollout =====",
               "kubectl rollout status deployment/assessment-portal-frontend --timeout=180s",
-
+              "kubectl rollout restart deployment/assessment-portal-frontend",
               "echo ===== Pods =====",
               "kubectl get pods -o wide",
 
