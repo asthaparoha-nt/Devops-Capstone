@@ -2,7 +2,7 @@ import axios from "axios";
 
 const api = axios.create({
 
-    baseURL: "/api",
+    baseURL: "https://assessment-portal-alb-1084175467.us-east-1.elb.amazonaws.com",
 
     headers: {
         "Content-Type": "application/json"

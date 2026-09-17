@@ -25,7 +25,7 @@ spec:
       containers:
         - name: frontend
 
-          image: 984220190731.dkr.ecr.us-east-1.amazonaws.com/assessment-portal-frontend:4a4daa03dced8b73c39585fa0ebdc3c36925d7e0
+          image: 984220190731.dkr.ecr.us-east-1.amazonaws.com/assessment-portal-frontend:latest
 
           imagePullPolicy: Always
 
