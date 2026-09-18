@@ -6,7 +6,7 @@ export const loginUser = async (data) => {
 
     const response = await api.post(
 
-        `${BASE_URL}/auth/login`,
+        `/auth/login`,
         data
     );
 
@@ -18,7 +18,7 @@ export const registerUser = async (data) => {
 
     const response = await api.post(
 
-        `${BASE_URL}/auth/register`,
+        `/auth/register`,
 
         data
 

@@ -15,6 +15,9 @@ class Settings:
     DATABASE_NAME: str = (
         os.getenv("DATABASE_NAME") or "assessment_portal"
     )
-
+    ACCESS_TOKEN_EXPIRE_MINUTES= 60
+    SECRET_KEY: str = os.getenv("SECRET_KEY") or "your_secret_key"
+    ALGORITHM: str = os.getenv("ALGORITHM") or "HS256"
+    
 
 settings = Settings()

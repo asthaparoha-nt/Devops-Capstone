@@ -13,9 +13,7 @@ module "vpc" {
   public_subnet_cidrs  = var.public_subnet_cidrs
   private_subnet_cidrs = var.private_subnet_cidrs
 }
-# ============================================================
 # IAM
-# ============================================================
 
 module "iam" {
   source = "./modules/iam"
@@ -24,10 +22,7 @@ module "iam" {
   aws_region   = var.aws_region
 }
 
-
-# ============================================================
 # K3s SECURITY GROUP
-# ============================================================
 
 module "k3s_security_group" {
   source = "./modules/security-group"
@@ -36,11 +31,7 @@ module "k3s_security_group" {
   vpc_id       = module.vpc.vpc_id
   vpc_cidr     = var.vpc_cidr
 }
-
-
-# ============================================================
 # K3s MASTER
-# ============================================================
 
 module "master_node" {
   source = "./modules/master-node"
@@ -56,11 +47,7 @@ module "master_node" {
 
   instance_type = "t3.small"
 }
-
-
-# ============================================================
 # K3s WORKERS
-# ============================================================
 
 module "worker_node" {
   source = "./modules/worker-node"
@@ -78,6 +65,8 @@ module "worker_node" {
 
   min_size = 1
   max_size = 3
+
+  depends_on = [module.master_node]
 }
 module "alb" {
   source = "./modules/alb"

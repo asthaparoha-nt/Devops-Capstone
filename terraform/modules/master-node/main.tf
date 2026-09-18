@@ -39,14 +39,17 @@ resource "aws_instance" "master" {
 
   iam_instance_profile = var.instance_profile_name
 
-  user_data = templatefile(
-    "${path.module}/master-user-data.tftpl",
-    {
-      project_name = var.project_name
-      aws_region   = var.aws_region
-    }
+ user_data = replace(
+    templatefile(
+      "${path.module}/master-user-data.tftpl",
+      {
+        project_name = var.project_name
+        aws_region   = var.aws_region
+      }
+    ),
+    "\r\n",
+    "\n"
   )
-
   tags = {
     Name = "${var.project_name}-k3s-master"
     Role = "k3s-master"

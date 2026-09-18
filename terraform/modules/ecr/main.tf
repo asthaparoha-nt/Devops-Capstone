@@ -22,9 +22,8 @@ resource "aws_ecr_repository" "backend" {
 }
 
 
-# ------------------------------------------------------------
+
 # Frontend ECR Repository
-# ------------------------------------------------------------
 
 resource "aws_ecr_repository" "frontend" {
   name                 = "${var.project_name}-frontend"
@@ -49,13 +48,10 @@ resource "aws_ecr_repository" "frontend" {
 }
 
 
-# ============================================================
-# ECR Lifecycle Policies
-# ============================================================
 
-# ------------------------------------------------------------
+# ECR Lifecycle Policies
+
 # Backend Lifecycle Policy
-# ------------------------------------------------------------
 
 resource "aws_ecr_lifecycle_policy" "backend" {
   repository = aws_ecr_repository.backend.name
@@ -82,10 +78,8 @@ resource "aws_ecr_lifecycle_policy" "backend" {
 }
 
 
-# ------------------------------------------------------------
-# Frontend Lifecycle Policy
-# ------------------------------------------------------------
 
+# Frontend Lifecycle Policy
 resource "aws_ecr_lifecycle_policy" "frontend" {
   repository = aws_ecr_repository.frontend.name
 

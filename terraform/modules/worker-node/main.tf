@@ -43,15 +43,18 @@ resource "aws_launch_template" "worker" {
   }
 
   user_data = base64encode(
-    templatefile(
-      "${path.module}/worker-user-data.tftpl",
-      {
-        project_name = var.project_name
-        aws_region   = var.aws_region
-      }
+    replace(
+      templatefile(
+        "${path.module}/worker-user-data.tftpl",
+        {
+          project_name = var.project_name
+          aws_region   = var.aws_region
+        }
+      ),
+      "\r\n",
+      "\n"
     )
   )
-
   tag_specifications {
     resource_type = "instance"
 
