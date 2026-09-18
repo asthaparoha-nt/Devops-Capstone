@@ -41,6 +41,10 @@ spec:
 
             - name: DATABASE_NAME
               value: asthaparoha6_db_user
+            - name: SECRET_KEY
+              value: "HSA245ijnobiumhub"
+            - name: ALGORITHM
+              value: "HS256"
 
 
 ---
