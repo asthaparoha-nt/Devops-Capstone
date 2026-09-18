@@ -18,16 +18,15 @@ jobs:
 
     steps:
 
-      # ==========================================================
+     
       # 1. Checkout Repository
-      # ==========================================================
+    
       - name: Checkout repository
         uses: actions/checkout@v4
 
 
-      # ==========================================================
       # 2. Configure AWS using GitHub OIDC
-      # ==========================================================
+      
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -35,9 +34,9 @@ jobs:
           aws-region: us-east-1
 
 
-      # ==========================================================
+      
       # 3. Find Running K3s Master
-      # ==========================================================
+      
       - name: Find K3s Master
         shell: bash
         run: |
@@ -59,9 +58,9 @@ jobs:
 
           echo "MASTER_INSTANCE_ID=$MASTER_INSTANCE_ID" >> "$GITHUB_ENV"
 
-      # ==========================================================
+      
       # 7. Deploy Application to K3s
-      # ==========================================================
+      
       - name: Deploy application using SSM
         shell: bash
         run: |
@@ -120,9 +119,9 @@ jobs:
           echo "Deployment SSM Command ID: $DEPLOY_COMMAND_ID"
 
 
-      # ==========================================================
+      
       # 8. Wait for Kubernetes Deployment
-      # ==========================================================
+      
       - name: Wait for Kubernetes deployment
         shell: bash
         run: |
@@ -182,9 +181,9 @@ jobs:
           exit 1
 
 
-      # ==========================================================
+      
       # 9. Display Final Kubernetes Status
-      # ==========================================================
+      
       - name: Show final deployment status
         if: always()
         shell: bash

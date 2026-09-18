@@ -1,8 +1,6 @@
 data "aws_caller_identity" "current" {}
 
-# ============================================================
 # MASTER IAM ROLE
-# ============================================================
 
 resource "aws_iam_role" "master" {
   name = "${var.project_name}-k3s-master-role"
@@ -104,9 +102,7 @@ resource "aws_iam_instance_profile" "master" {
 }
 
 
-# ============================================================
 # WORKER IAM ROLE
-# ============================================================
 
 resource "aws_iam_role" "worker" {
   name = "${var.project_name}-k3s-worker-role"
