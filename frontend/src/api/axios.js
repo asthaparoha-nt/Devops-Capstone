@@ -1,14 +1,23 @@
 import axios from "axios";
 
+axios.defaults.baseURL = 'http://assessment-portal-alb-1084175467.us-east-1.elb.amazonaws.com';
+
 const api = axios.create({
-
-    baseURL: "/api",
-
+    baseURL: 'http://assessment-portal-alb-1084175467.us-east-1.elb.amazonaws.com',
     headers: {
         "Content-Type": "application/json"
     }
+})
 
-});
+// const api = axios.create({
+
+//     baseURL: "/api",
+
+//     headers: {
+//         "Content-Type": "application/json"
+//     }
+
+// });
 
 api.interceptors.request.use(
 
