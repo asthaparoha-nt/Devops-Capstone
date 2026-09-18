@@ -1,0 +1,7 @@
+* text=auto eol=lf
+
+# Shell scripts and user-data templates MUST be LF — a CRLF shebang
+# makes the kernel look for an interpreter named "/bin/bash\r".
+*.sh      text eol=lf
+*.tftpl   text eol=lf
+*.tpl     text eol=lf
